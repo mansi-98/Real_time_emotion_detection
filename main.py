@@ -1,55 +1,24 @@
-
+# import the necessary packages
 from flask import Flask, render_template, Response
-#from camera import VideoCamera
+from videoTester import VideoCamera
 
 app = Flask(__name__)
-import cv2
-face_cascade=cv2.CascadeClassifier("haarcascade_frontalface_alt2.xml")
-ds_factor=0.6
-
-class VideoCamera(object):
-    def __init__(self):
-        self.video = cv2.VideoCapture(0)
-    
-    def __del__(self):
-        self.video.release()
-    
-    def get_frame(self):
-        success, image = self.video.read()
-        image=cv2.resize(image,None,fx=ds_factor,fy=ds_factor,interpolation=cv2.INTER_AREA)
-        gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-        face_rects=face_cascade.detectMultiScale(gray,1.3,5)
-        for (x,y,w,h) in face_rects:
-        	cv2.rectangle(image,(x,y),(x+w,y+h),(0,255,0),2)
-        	break
-        ret, jpeg = cv2.imencode('.jpg', image)
-        return jpeg.tobytes()
-
-
 @app.route('/')
 def index():
+    # rendering webpage
     return render_template('index.html')
 
 def gen(camera):
     while True:
-        frame = camera.get_frame()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
+        #get camera frame
+        videoTester.get_frame()
+ 
 @app.route('/video_feed')
 def video_feed():
     return Response(gen(VideoCamera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-from werkzeug.debug import DebuggedApplication
-
-def create_app():
-    # Insert whatever else you do in your Flask app factory.
-
-    if app.debug:
-        app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=True)
-
-    return app
 
 if __name__ == '__main__':
-    app.run()
+    # defining server ip address and port
+    app.run(host='0.0.0.0',port='8080', debug=True)
